@@ -17,7 +17,7 @@ const fadeUp = {
 }
 
 const FEATURES = [
-  { icon: '🎬', title: 'Rasm darsliklar', desc: 'sifatli rasm ko\'rsatmalar bilan har bir bosqichni tushuning' },
+  { icon: '📸', title: 'Rasm darsliklar', desc: 'sifatli rasm ko\'rsatmalar bilan har bir bosqichni tushuning' },
   { icon: '🍳', title: '50+ Retsept', desc: 'Kattalar va bolalar uchun mos, 50 dan ortiq taom retsepti' },
   { icon: '📱', title: 'Qulay kirish', desc: 'Telefon, planshet yoki kompyuterdan istalgan vaqtda kirish' },
   { icon: '👨‍🍳', title: 'Professional', desc: 'Professional oshpaz tajribasi asosida tayyorlangan darslar' },
@@ -148,7 +148,7 @@ export default function HomePage() {
             </motion.p>
 
             <motion.p className="hero-desc" variants={fadeUp} custom={3} initial="hidden" animate="visible">
-              Shakshuka, Biryani, Befstroganov, Fish & Chips va boshqa 46 ta mazali taomni
+              Shakshuka, Biryani, Befstroganov, Fish & Chips va boshqa 50 ta mazali taomni
               video darslar orqali o'rganing. Bir martalik to'lov — umrboqiy kirish.
             </motion.p>
 

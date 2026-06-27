@@ -49,10 +49,44 @@ function AutoLogin() {
   return null
 }
 
+function ThemeManager() {
+  useEffect(() => {
+    const applyTheme = () => {
+      const hour = new Date().getHours()
+      const isNightTime = hour >= 19 || hour < 6
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      
+      if (isNightTime || prefersDark) {
+        document.documentElement.classList.add('dark-theme')
+      } else {
+        document.documentElement.classList.remove('dark-theme')
+      }
+    }
+
+    applyTheme() // Run immediately
+
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = () => applyTheme()
+    mediaQuery.addEventListener('change', handleChange)
+
+    // Check time every minute
+    const interval = setInterval(applyTheme, 60000)
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange)
+      clearInterval(interval)
+    }
+  }, [])
+
+  return null
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ThemeManager />
         <AutoLogin />
         <Toaster
           position="top-center"

@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
   name: { type: String },
   phone: { type: String },
   email: { type: String },
+  photoUrl: { type: String },
   googleId: { type: String },
   roles: { type: [String], default: [] },
   isPremium: { type: Boolean, default: false },

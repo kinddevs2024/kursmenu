@@ -11,7 +11,7 @@ export function AuthProvider({ children }) {
       // Decode JWT payload to get user info
       try {
         const payload = JSON.parse(atob(token.split('.')[1]))
-        setUser({ id: payload.sub, roles: payload.roles || [], isPremium: payload.isPremium || false })
+        setUser({ id: payload.sub, roles: payload.roles || [], isPremium: payload.isPremium || false, photoUrl: payload.photoUrl || null })
       } catch {
         setUser(null)
         setToken(null)

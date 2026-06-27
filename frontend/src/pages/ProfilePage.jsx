@@ -28,7 +28,11 @@ export default function ProfilePage() {
       <div className="profile-header">
         <div className="container" style={{ textAlign: 'center' }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="profile-avatar" style={{ margin: '0 auto 16px' }}>👤</div>
+            {user.photoUrl ? (
+              <img src={user.photoUrl.startsWith('http') ? user.photoUrl : `${API}${user.photoUrl}`} alt="Avatar" className="profile-avatar" style={{ margin: '0 auto 16px', display: 'block', objectFit: 'cover', width: '80px', height: '80px', borderRadius: '50%' }} />
+            ) : (
+              <div className="profile-avatar" style={{ margin: '0 auto 16px' }}>👤</div>
+            )}
             <h2 style={{ marginBottom: 8 }}>Mening Profilim</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
               Telegram ID: {user.id}

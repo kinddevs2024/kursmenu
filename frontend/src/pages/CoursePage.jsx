@@ -13,6 +13,46 @@ import axios from 'axios'
 
 const API = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '')
 
+const ProtectedImage = ({ src, alt, style, isFullscreen }) => {
+  const canvasRef = useRef(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+    img.crossOrigin = 'anonymous' // Important for CORS if API is on another domain
+    
+    img.onload = () => {
+      canvas.width = img.width
+      canvas.height = img.height
+      ctx.drawImage(img, 0, 0)
+    }
+    img.onerror = () => {
+      // Fallback
+      img.src = `https://picsum.photos/seed/${Math.random()}/800/520`
+    }
+    img.src = src
+  }, [src])
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <canvas 
+        ref={canvasRef}
+        style={{ ...style, pointerEvents: 'none', userSelect: 'none' }}
+        onContextMenu={(e) => e.preventDefault()}
+        onDragStart={(e) => e.preventDefault()}
+      />
+      {/* Invisible overlay to block all interactions */}
+      <div 
+        style={{ position: 'absolute', inset: 0, zIndex: 10 }}
+        onContextMenu={(e) => e.preventDefault()}
+        onDragStart={(e) => e.preventDefault()}
+      />
+    </div>
+  )
+}
+
 export default function CoursePage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -23,6 +63,7 @@ export default function CoursePage() {
   const [showAuth, setShowAuth] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isBlackedOut, setIsBlackedOut] = useState(false)
   const slideViewerRef = useRef(null)
   const purchased = hasPurchased(id)
 
@@ -61,7 +102,59 @@ export default function CoursePage() {
     return () => document.removeEventListener('fullscreenchange', handleFsChange)
   }, [isFullscreen])
 
+  // Anti-screenshot and Anti-inspect effect
   useEffect(() => {
+    const preventShortcuts = (e) => {
+      // Block PrintScreen and Snipping Tools (Win+Shift+S, Cmd+Shift+3/4/5)
+      if (
+        e.key === 'PrintScreen' || 
+        (e.metaKey && e.shiftKey && ['S', 's', '3', '4', '5'].includes(e.key))
+      ) {
+        navigator.clipboard.writeText(''); 
+        setIsBlackedOut(true);
+        setTimeout(() => setIsBlackedOut(false), 3000); // Restore after 3 seconds
+        e.preventDefault();
+      }
+      // Block DevTools & Save (F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S, Ctrl+P)
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) ||
+        (e.ctrlKey && ['U', 'u', 'S', 's', 'P', 'p'].includes(e.key)) ||
+        (e.metaKey && e.shiftKey && ['I', 'i', 'C', 'c'].includes(e.key)) ||
+        (e.metaKey && ['S', 's', 'P', 'p'].includes(e.key))
+      ) {
+        e.preventDefault();
+        return false;
+      }
+    };
+    
+    // Window blur effect to block OS-level snipping tools
+    const handleBlur = () => setIsBlackedOut(true);
+    const handleFocus = () => setIsBlackedOut(false);
+    
+    // Prevent context menu globally on this page
+    const preventContext = (e) => e.preventDefault();
+    
+    // Prevent drag globally
+    const preventDrag = (e) => e.preventDefault();
+    
+    window.addEventListener('keydown', preventShortcuts);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('contextmenu', preventContext);
+    document.addEventListener('dragstart', preventDrag);
+    
+    return () => {
+      window.removeEventListener('keydown', preventShortcuts);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('contextmenu', preventContext);
+      document.removeEventListener('dragstart', preventDrag);
+    };
+  }, []);
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
     Promise.all([
       axios.get(`${API}/api/courses/${id}`),
       axios.get(`${API}/api/courses/${id}/slides`).catch(() => ({ data: [] }))
@@ -81,7 +174,17 @@ export default function CoursePage() {
   if (!course) return null
 
   return (
-    <div style={{ minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh', userSelect: 'none', WebkitUserSelect: 'none' }}>
+      {/* Anti-screenshot Blackout Overlay */}
+      {isBlackedOut && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 999999, background: '#000',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff',
+          fontSize: '1.2rem', fontFamily: 'var(--font-sans)', userSelect: 'none'
+        }}>
+          Skrinshot olish taqiqlangan!
+        </div>
+      )}
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, var(--cream) 0%, var(--cream-dark) 100%)',
@@ -124,11 +227,15 @@ export default function CoursePage() {
                 <h3 style={{ marginBottom: 16, fontFamily: 'var(--font-serif)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span>🛒</span> Kerakli masalliqlar
                 </h3>
-                <ul style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', paddingLeft: 20, color: 'var(--text-secondary)' }}>
-                  {(course.ingredients && course.ingredients.length > 0 ? course.ingredients : ['Tuxum', 'Pomidor', 'Ziravorlar']).map((ing, i) => (
-                    <li key={i}>{ing}</li>
-                  ))}
-                </ul>
+                {course.ingredients && course.ingredients.length > 0 ? (
+                  <ul style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', paddingLeft: 20, color: 'var(--text-secondary)' }}>
+                    {course.ingredients.map((ing, i) => (
+                      <li key={i}>{ing}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>Masalliqlar ro'yxati kiritilmagan.</p>
+                )}
               </div>
             </div>
 
@@ -209,11 +316,16 @@ export default function CoursePage() {
                   >
                     {slides.map((slide, i) => (
                       <SwiperSlide key={i} style={isFullscreen ? { display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}}>
-                        <img
+                        <ProtectedImage
                           src={`${API}/api/courses/${id}/slides/${slide}`}
                           alt={`Slayd ${i + 1}`}
-                          style={{ width: '100%', maxHeight: isFullscreen ? '100vh' : 520, objectFit: 'contain', background: isFullscreen ? '#000' : 'var(--cream)' }}
-                          onError={e => { e.target.src = `https://picsum.photos/seed/${id}-${i}/800/520` }}
+                          isFullscreen={isFullscreen}
+                          style={{ 
+                            width: '100%', 
+                            maxHeight: isFullscreen ? '100vh' : 520, 
+                            objectFit: 'contain', 
+                            background: isFullscreen ? '#000' : 'var(--cream)'
+                          }}
                         />
                       </SwiperSlide>
                     ))}
@@ -222,7 +334,7 @@ export default function CoursePage() {
                      <button 
                        onClick={toggleFullscreen} 
                        style={{ 
-                         position: 'absolute', top: 20, right: 20, zIndex: 100000, 
+                         position: 'fixed', top: 20, right: 20, zIndex: 100000, 
                          background: 'rgba(255,255,255,0.2)', color: 'white', 
                          border: '1px solid rgba(255,255,255,0.4)', borderRadius: '50%', 
                          width: 44, height: 44, fontSize: '1.4rem', cursor: 'pointer',
@@ -282,3 +394,4 @@ export default function CoursePage() {
     </div>
   )
 }
+

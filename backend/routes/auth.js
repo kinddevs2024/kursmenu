@@ -9,6 +9,44 @@ function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+const fs = require('fs');
+const path = require('path');
+const https = require('https');
+
+async function fetchAvatar(telegramId, bot) {
+  try {
+    const photos = await bot.getUserProfilePhotos(telegramId, { limit: 1 });
+    if (photos.total_count > 0) {
+      const fileId = photos.photos[0][0].file_id;
+      const fileLink = await bot.getFileLink(fileId);
+      
+      const avatarsDir = path.join(__dirname, '../public/uploads/avatars');
+      if (!fs.existsSync(avatarsDir)) {
+        fs.mkdirSync(avatarsDir, { recursive: true });
+      }
+      
+      const filename = `${telegramId}_avatar.jpg`;
+      const filepath = path.join(avatarsDir, filename);
+      
+      return new Promise((resolve) => {
+        const file = fs.createWriteStream(filepath);
+        https.get(fileLink, (response) => {
+          response.pipe(file);
+          file.on('finish', () => {
+            file.close(() => resolve(`/uploads/avatars/${filename}`));
+          });
+        }).on('error', (err) => {
+          fs.unlink(filepath, () => {});
+          resolve(null);
+        });
+      });
+    }
+  } catch (err) {
+    console.error('Error fetching avatar:', err.message);
+  }
+  return null;
+}
+
 // POST /api/auth/start - initiate Telegram verification (Code Login)
 router.post('/start', async (req, res) => {
   const { telegramId } = req.body; // Can be username or ID
@@ -32,9 +70,8 @@ router.post('/start', async (req, res) => {
 
     user.telegramCode = code;
     user.telegramCodeExpires = expires;
-    await user.save();
 
-    // Send code via Telegram Bot
+    // Send code via Telegram Bot and fetch avatar
     const bot = getBotInstance();
     if (bot) {
       try {
@@ -44,14 +81,21 @@ router.post('/start', async (req, res) => {
           { parse_mode: 'Markdown' }
         );
         console.log(`Sent code ${code} to ${user.telegramId}`);
+
+        // Try fetching avatar
+        const newAvatar = await fetchAvatar(user.telegramId, bot);
+        if (newAvatar) {
+          user.photoUrl = newAvatar;
+        }
       } catch (botErr) {
-        console.error('Failed to send telegram message:', botErr.message);
+        console.error('Failed to send telegram message or fetch avatar:', botErr.message);
         return res.status(500).json({ error: 'Telegram orqali xabar yuborishda xatolik. Botni bloklamaganligingizni tekshiring.' });
       }
     } else {
       console.warn(`Bot not running. Mock code: ${code}`);
     }
 
+    await user.save();
     res.json({ message: 'Verification code sent via Telegram' });
   } catch (err) {
     console.error(err);
@@ -80,7 +124,7 @@ router.post('/verify', async (req, res) => {
     user.telegramCodeExpires = undefined;
     await user.save();
     
-    const accessToken = jwt.sign({ sub: user._id, roles: user.roles, isPremium: user.isPremium }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_ACCESS_TTL || '15m' });
+    const accessToken = jwt.sign({ sub: user._id, roles: user.roles, isPremium: user.isPremium, photoUrl: user.photoUrl }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_ACCESS_TTL || '15m' });
     const refreshToken = jwt.sign({ sub: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.JWT_REFRESH_TTL || '7d' });
     res.json({ accessToken, refreshToken });
   } catch (err) {
@@ -101,7 +145,7 @@ router.post('/link-login', async (req, res) => {
     user.loginToken = undefined;
     await user.save();
 
-    const accessToken = jwt.sign({ sub: user._id, roles: user.roles, isPremium: user.isPremium }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_ACCESS_TTL || '15m' });
+    const accessToken = jwt.sign({ sub: user._id, roles: user.roles, isPremium: user.isPremium, photoUrl: user.photoUrl }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_ACCESS_TTL || '15m' });
     const refreshToken = jwt.sign({ sub: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.JWT_REFRESH_TTL || '7d' });
     res.json({ accessToken, refreshToken });
   } catch (err) {

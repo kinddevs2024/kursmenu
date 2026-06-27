@@ -58,8 +58,8 @@ export default function AdminPage() {
         <div style={{ background: '#fff', padding: 40, borderRadius: 16, boxShadow: 'var(--shadow-md)', textAlign: 'center' }}>
           <h2 style={{ marginBottom: 24 }}>Admin Panel</h2>
           <form onSubmit={handleAdminLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16, width: 300 }}>
-            <input type="text" placeholder="Login (admin)" value={loginForm.username} onChange={e => setLoginForm({...loginForm, username: e.target.value})} style={{ padding: 12, borderRadius: 8, border: '1px solid var(--border)' }} />
-            <input type="password" placeholder="Parol (12345)" value={loginForm.password} onChange={e => setLoginForm({...loginForm, password: e.target.value})} style={{ padding: 12, borderRadius: 8, border: '1px solid var(--border)' }} />
+            <input type="text" placeholder="Login" value={loginForm.username} onChange={e => setLoginForm({...loginForm, username: e.target.value})} style={{ padding: 12, borderRadius: 8, border: '1px solid var(--border)' }} />
+            <input type="password" placeholder="Parol" value={loginForm.password} onChange={e => setLoginForm({...loginForm, password: e.target.value})} style={{ padding: 12, borderRadius: 8, border: '1px solid var(--border)' }} />
             <button type="submit" className="btn btn-primary" style={{ padding: 12 }}>Kirish</button>
           </form>
         </div>

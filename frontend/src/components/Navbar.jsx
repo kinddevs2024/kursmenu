@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext'
 import AuthModal from './AuthModal'
 import { motion, AnimatePresence } from 'framer-motion'
 
+const API = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '')
+
 export default function Navbar() {
   const { user, logout } = useAuth()
   const [showAuth, setShowAuth] = useState(false)
@@ -37,8 +39,12 @@ export default function Navbar() {
           <div className="navbar-actions">
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Link to="/profile" className="btn btn-ghost" style={{ padding: '8px 16px', fontSize: '1.2rem' }}>
-                  👤
+                <Link to="/profile" className="btn btn-ghost" style={{ padding: user.photoUrl ? '4px 12px' : '8px 16px', fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>
+                  {user.photoUrl ? (
+                    <img src={user.photoUrl.startsWith('http') ? user.photoUrl : `${API}${user.photoUrl}`} alt="Avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (
+                    '👤'
+                  )}
                 </Link>
                 <button onClick={handleLogout} className="btn btn-outline hide-on-mobile" style={{ padding: '8px 20px', fontSize: '0.88rem' }}>
                   Chiqish
