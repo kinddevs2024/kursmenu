@@ -33,7 +33,7 @@ function initBot() {
           existingUser.loginToken = loginToken;
           await existingUser.save();
           
-          const loginUrl = `${process.env.FRONTEND_URL || 'https://global-muslims.space/'}/?token=${loginToken}`;
+          const loginUrl = `${process.env.FRONTEND_URL || 'https://global-muslims.space'}/?token=${loginToken}`;
           
           try {
             await bot.sendMessage(
@@ -101,7 +101,7 @@ function initBot() {
             // Clean state
             delete userStates[chatId];
 
-            const loginUrl = `${process.env.FRONTEND_URL || 'https://global-muslims.space/'}/?token=${loginToken}`;
+            const loginUrl = `${process.env.FRONTEND_URL || 'https://global-muslims.space'}/?token=${loginToken}`;
 
             // First remove keyboard if any
             try {
