@@ -1,0 +1,13 @@
+{
+  "name": "kurs-platform",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "build": "npm --prefix frontend run build",
+    "vercel-build": "npm --prefix frontend run build"
+  }
+}
