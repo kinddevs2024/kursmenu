@@ -35,8 +35,9 @@ function CourseCard({ dish, index, onBuyClick }) {
   const { hasPurchased } = useAuth()
   const purchased = hasPurchased(dish._id)
   
-  // Try to use the first slide as thumbnail, fallback to Picsum
-  const thumbnailUrl = dish.thumbnailUrl || `${API}/api/courses/${dish._id}/slides/slide-01.png`
+  // Try to use the first slide as thumbnail, fallback to slide-01.png
+  const firstSlide = dish.slidesFiles && dish.slidesFiles.length > 0 ? dish.slidesFiles[0] : 'slide-01.png';
+  const thumbnailUrl = dish.thumbnailUrl || `${API}/api/courses/${dish._id}/slides/${firstSlide}`;
 
   return (
     <motion.div
@@ -294,7 +295,7 @@ export default function HomePage() {
                     }}
                     style={{ padding: '8px 16px', fontSize: '0.9rem' }}
                   >
-                    Oldingi
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><path d="M15 18l-6-6 6-6"/></svg>
                   </button>
                   
                   <div style={{ display: 'flex', gap: 4 }}>
@@ -326,7 +327,7 @@ export default function HomePage() {
                     }}
                     style={{ padding: '8px 16px', fontSize: '0.9rem' }}
                   >
-                    Keyingi
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><path d="M9 18l6-6-6-6"/></svg>
                   </button>
                 </div>
               )}

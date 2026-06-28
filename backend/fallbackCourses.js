@@ -82,7 +82,7 @@ function buildCourse(slug, dirPath) {
     title,
     description: `Step-by-step pastry course for ${title.toLowerCase()}.`,
     category: categoryFor(slug),
-    priceCents: 5000000,
+    priceCents: 12500000,
     slidesPath: slug,
     slidesCount: countSlides(dirPath),
     difficulty,

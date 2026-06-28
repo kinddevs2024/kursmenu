@@ -48,7 +48,7 @@ async function seed() {
         title: title,
         description: `Professional oshpaz ko'rsatmalari bilan ${title} tayyorlashni o'rganing.`,
         category: 'Desertlar',
-        priceCents: 5000000,
+        priceCents: 12500000,
         slidesCount: files.length,
         difficulty: 'Medium',
         prepTime: '45 daqiqa',

@@ -10,8 +10,13 @@ function isMongoReady() {
 }
 
 async function findCourse(id) {
-  if (isMongoReady() && mongoose.Types.ObjectId.isValid(id)) {
-    const course = await Course.findById(id);
+  if (isMongoReady()) {
+    let course = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      course = await Course.findById(id);
+    } else {
+      course = await Course.findOne({ slug: id });
+    }
     if (course) return course;
   }
 
@@ -67,8 +72,12 @@ router.get('/:id/slides', async (req, res) => {
     const course = await findCourse(req.params.id);
     if (!course) return res.status(404).json({ error: 'Course not found' });
     
-    // For Vercel Serverless compatibility, we generate the array based on slidesCount
-    // because reading the 1.2GB directory is not possible in a 250MB serverless function.
+    // Check if we have exact file names saved in DB
+    if (course.slidesFiles && course.slidesFiles.length > 0) {
+      return res.json(course.slidesFiles);
+    }
+
+    // Fallback if not saved in DB for some reason
     const count = course.slidesCount || 10;
     const files = [];
     for (let i = 1; i <= count; i++) {
@@ -89,7 +98,9 @@ router.get('/:id/slides/:filename', async (req, res) => {
     if (!course) return res.status(404).json({ error: 'Course not found' });
 
     const filename = req.params.filename;
-    const filePath = path.join(slidesFullPath, course.slug || req.params.id, filename);
+    // Use slidesPath (the actual folder name) if available, otherwise fallback to slug
+    const folderName = course.slidesPath || course.slug || req.params.id;
+    const filePath = path.join(slidesFullPath, folderName, filename);
     
     res.sendFile(filePath, err => {
       if (err) {

@@ -42,25 +42,6 @@ function initBot(io) {
           existingUser.loginToken = loginToken;
           await existingUser.save();
           
-          if (sessionId && globalIo) {
-            const accessToken = jwt.sign(
-              { sub: existingUser._id, roles: existingUser.roles, isPremium: existingUser.isPremium, photoUrl: existingUser.photoUrl },
-              process.env.JWT_SECRET,
-              { expiresIn: process.env.JWT_ACCESS_TTL || '15m' }
-            );
-            globalIo.emit('login_success', { sessionId, accessToken });
-            
-            try {
-              await bot.sendMessage(
-                chatId,
-                `✅ Muvaffaqiyatli tasdiqlandi, ${existingUser.name}!\n\nIltimos, ilovaga qayting (sayt avtomatik ochiladi).`
-              );
-            } catch (e) {
-              console.error(e);
-            }
-            return;
-          }
-
           const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/?token=${loginToken}`;
           
           try {
@@ -135,29 +116,15 @@ function initBot(io) {
             try {
               await bot.sendMessage(chatId, `✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!`, { reply_markup: { remove_keyboard: true } });
               
-              if (state.sessionId && globalIo) {
-                const accessToken = jwt.sign(
-                  { sub: existingUser._id, roles: existingUser.roles, isPremium: existingUser.isPremium, photoUrl: existingUser.photoUrl },
-                  process.env.JWT_SECRET,
-                  { expiresIn: process.env.JWT_ACCESS_TTL || '15m' }
-                );
-                globalIo.emit('login_success', { sessionId: state.sessionId, accessToken });
-                
-                await bot.sendMessage(
-                  chatId,
-                  `Iltimos, ilovaga qayting (sayt avtomatik ochiladi).`
-                );
-              } else {
-                await bot.sendMessage(
-                  chatId,
-                  `Saytga avtomat kirish uchun quyidagi tugmani bosing:`,
-                  { 
-                    reply_markup: { 
-                      inline_keyboard: [[{ text: '👉 Ochish', url: loginUrl }]]
-                    } 
-                  }
-                );
-              }
+              await bot.sendMessage(
+                chatId,
+                `Saytga avtomat kirish uchun quyidagi tugmani bosing:`,
+                { 
+                  reply_markup: { 
+                    inline_keyboard: [[{ text: '👉 Ochish', url: loginUrl }]]
+                  } 
+                }
+              );
             } catch (e) {
               console.error(e);
             }
