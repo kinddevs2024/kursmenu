@@ -46,9 +46,11 @@ export default function Navbar() {
                     '👤'
                   )}
                 </Link>
-                <button onClick={handleLogout} className="btn btn-outline hide-on-mobile" style={{ padding: '8px 20px', fontSize: '0.88rem' }}>
-                  Chiqish
-                </button>
+                {!window.Telegram?.WebApp?.initData && (
+                  <button onClick={handleLogout} className="btn btn-outline hide-on-mobile" style={{ padding: '8px 20px', fontSize: '0.88rem' }}>
+                    Chiqish
+                  </button>
+                )}
               </div>
             ) : (
               <button

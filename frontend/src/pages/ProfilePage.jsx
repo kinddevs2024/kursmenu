@@ -38,9 +38,11 @@ export default function ProfilePage() {
               Telegram ID: {user.id}
             </p>
             <div style={{ marginTop: 20 }}>
-              <button className="btn btn-outline" onClick={handleLogout} style={{ padding: '10px 28px', fontSize: '0.9rem' }}>
-                Chiqish
-              </button>
+              {!window.Telegram?.WebApp?.initData && (
+                <button className="btn btn-outline" onClick={handleLogout} style={{ padding: '10px 28px', fontSize: '0.9rem' }}>
+                  Chiqish
+                </button>
+              )}
             </div>
           </motion.div>
         </div>
