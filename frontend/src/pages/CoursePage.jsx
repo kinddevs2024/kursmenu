@@ -63,6 +63,7 @@ export default function CoursePage() {
   const [showAuth, setShowAuth] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isHoveringSlides, setIsHoveringSlides] = useState(false)
   const [isBlackedOut, setIsBlackedOut] = useState(false)
   const slideViewerRef = useRef(null)
   const purchased = hasPurchased(id)
@@ -102,20 +103,10 @@ export default function CoursePage() {
     return () => document.removeEventListener('fullscreenchange', handleFsChange)
   }, [isFullscreen])
 
-  // Anti-screenshot and Anti-inspect effect
+  // Anti-screenshot and Anti-inspect effect (Scoped to slides)
   useEffect(() => {
     const preventShortcuts = (e) => {
-      // Block PrintScreen and Snipping Tools (Win+Shift+S, Cmd+Shift+3/4/5)
-      if (
-        e.key === 'PrintScreen' || 
-        (e.metaKey && e.shiftKey && ['S', 's', '3', '4', '5'].includes(e.key))
-      ) {
-        navigator.clipboard.writeText(''); 
-        setIsBlackedOut(true);
-        setTimeout(() => setIsBlackedOut(false), 3000); // Restore after 3 seconds
-        e.preventDefault();
-      }
-      // Block DevTools & Save (F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S, Ctrl+P)
+      // Block DevTools & Save (F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S, Ctrl+P) everywhere
       if (
         e.key === 'F12' ||
         (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) ||
@@ -126,32 +117,39 @@ export default function CoursePage() {
         e.preventDefault();
         return false;
       }
+
+      // Block PrintScreen and Snipping Tools ONLY if hovering slides or in fullscreen
+      if (isFullscreen || isHoveringSlides) {
+        if (
+          e.key === 'PrintScreen' || 
+          (e.metaKey && e.shiftKey && ['S', 's', '3', '4', '5'].includes(e.key))
+        ) {
+          navigator.clipboard.writeText(''); 
+          setIsBlackedOut(true);
+          setTimeout(() => setIsBlackedOut(false), 3000); // Restore after 3 seconds
+          e.preventDefault();
+        }
+      }
     };
     
-    // Window blur effect to block OS-level snipping tools
-    const handleBlur = () => setIsBlackedOut(true);
+    // Window blur effect to block OS-level snipping tools ONLY if hovering slides or in fullscreen
+    const handleBlur = () => {
+      if (isFullscreen || isHoveringSlides) {
+        setIsBlackedOut(true);
+      }
+    };
     const handleFocus = () => setIsBlackedOut(false);
-    
-    // Prevent context menu globally on this page
-    const preventContext = (e) => e.preventDefault();
-    
-    // Prevent drag globally
-    const preventDrag = (e) => e.preventDefault();
     
     window.addEventListener('keydown', preventShortcuts);
     window.addEventListener('blur', handleBlur);
     window.addEventListener('focus', handleFocus);
-    document.addEventListener('contextmenu', preventContext);
-    document.addEventListener('dragstart', preventDrag);
     
     return () => {
       window.removeEventListener('keydown', preventShortcuts);
       window.removeEventListener('blur', handleBlur);
       window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('contextmenu', preventContext);
-      document.removeEventListener('dragstart', preventDrag);
     };
-  }, []);
+  }, [isFullscreen, isHoveringSlides]);
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -222,21 +220,7 @@ export default function CoursePage() {
                 <span className="badge badge-accent">🔪 Daraja: {course.difficulty || 'Medium'}</span>
               </div>
 
-              {/* Ingredients preview */}
-              <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)', maxWidth: 640 }}>
-                <h3 style={{ marginBottom: 16, fontFamily: 'var(--font-serif)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>🛒</span> Kerakli masalliqlar
-                </h3>
-                {course.ingredients && course.ingredients.length > 0 ? (
-                  <ul style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', paddingLeft: 20, color: 'var(--text-secondary)' }}>
-                    {course.ingredients.map((ing, i) => (
-                      <li key={i}>{ing}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>Masalliqlar ro'yxati kiritilmagan.</p>
-                )}
-              </div>
+
             </div>
 
             {/* Purchase card */}
@@ -302,6 +286,8 @@ export default function CoursePage() {
                 <div 
                   className="slide-viewer"
                   ref={slideViewerRef}
+                  onMouseEnter={() => setIsHoveringSlides(true)}
+                  onMouseLeave={() => setIsHoveringSlides(false)}
                   style={isFullscreen ? {
                     position: 'fixed', inset: 0, zIndex: 99999, background: '#000',
                     display: 'flex', alignItems: 'center', justifyContent: 'center'

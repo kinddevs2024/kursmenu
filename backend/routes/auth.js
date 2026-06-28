@@ -154,4 +154,19 @@ router.post('/link-login', async (req, res) => {
   }
 });
 
+// GET /api/auth/me - refresh user token
+router.get('/me', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'No token' });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    const user = await User.findById(decoded.sub);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const accessToken = jwt.sign({ sub: user._id, roles: user.roles, isPremium: user.isPremium, photoUrl: user.photoUrl }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_ACCESS_TTL || '15m' });
+    res.json({ accessToken });
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
 module.exports = router;

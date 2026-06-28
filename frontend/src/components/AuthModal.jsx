@@ -71,13 +71,13 @@ export default function AuthModal({ onClose }) {
           <div style={{ display: 'flex', gap: 8, marginBottom: 24, background: 'var(--cream-dark)', padding: 4, borderRadius: 12 }}>
             <button 
               onClick={() => setTab('register')}
-              style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: tab === 'register' ? '#fff' : 'transparent', boxShadow: tab === 'register' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', fontWeight: 600, color: tab === 'register' ? 'var(--text-primary)' : 'var(--text-muted)', transition: '0.2s' }}
+              style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: tab === 'register' ? 'var(--warm-white)' : 'transparent', boxShadow: tab === 'register' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', fontWeight: 600, color: tab === 'register' ? 'var(--text-primary)' : 'var(--text-muted)', transition: '0.2s' }}
             >
               Ro'yxatdan o'tish
             </button>
             <button 
               onClick={() => setTab('login')}
-              style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: tab === 'login' ? '#fff' : 'transparent', boxShadow: tab === 'login' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', fontWeight: 600, color: tab === 'login' ? 'var(--text-primary)' : 'var(--text-muted)', transition: '0.2s' }}
+              style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: tab === 'login' ? 'var(--warm-white)' : 'transparent', boxShadow: tab === 'login' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', fontWeight: 600, color: tab === 'login' ? 'var(--text-primary)' : 'var(--text-muted)', transition: '0.2s' }}
             >
               Kirish
             </button>

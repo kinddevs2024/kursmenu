@@ -15,7 +15,20 @@ const receiptsRoutes = require('./routes/receipts');
 const paymentRoutes = require('./routes/payments');
 const adminRoutes = require('./routes/admin');
 
+const http = require('http');
+const { Server } = require('socket.io');
+
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true
+  }
+});
+app.set('io', io);
+
 const PORT = process.env.PORT || 4000;
 
 // Security Middlewares (5 Security Libraries/Protection)
@@ -102,7 +115,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/edmission
     if (!isVercel) {
       initBot();
 
-      app.listen(PORT, () => {
+      server.listen(PORT, () => {
         console.log(`🚀 Backend server is running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode.`);
       });
     } else {

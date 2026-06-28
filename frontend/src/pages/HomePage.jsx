@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import AuthModal from '../components/AuthModal'
+import PaymentModal from '../components/PaymentModal'
 import axios from 'axios'
 
 const API = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '')
@@ -18,7 +19,7 @@ const fadeUp = {
 
 const FEATURES = [
   { icon: '📸', title: 'Rasm darsliklar', desc: 'sifatli rasm ko\'rsatmalar bilan har bir bosqichni tushuning' },
-  { icon: '🍳', title: '50+ Retsept', desc: 'Kattalar va bolalar uchun mos, 50 dan ortiq taom retsepti' },
+  { icon: '🍳', title: '50+ Retsept', desc: 'Hammaga yoshda mumkin bo`lgan, 50 dan ortiq taom retsepti' },
   { icon: '📱', title: 'Qulay kirish', desc: 'Telefon, planshet yoki kompyuterdan istalgan vaqtda kirish' },
   { icon: '👨‍🍳', title: 'Professional', desc: 'Professional oshpaz tajribasi asosida tayyorlangan darslar' },
 ]
@@ -102,6 +103,7 @@ export default function HomePage() {
   const [dishes, setDishes] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAuth, setShowAuth] = useState(false)
+  const [showPayment, setShowPayment] = useState(false)
   const [selectedDish, setSelectedDish] = useState(null)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -117,7 +119,7 @@ export default function HomePage() {
   const handleBuyClick = (dish) => {
     setSelectedDish(dish)
     if (!user) setShowAuth(true)
-    else window.location.href = `/course/${dish._id}`
+    else setShowPayment(true)
   }
 
   const filtered = dishes.filter(d =>
@@ -233,7 +235,7 @@ export default function HomePage() {
             <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
               <span className="badge badge-gold" style={{ marginBottom: 12, display: 'inline-block' }}>Kurslar</span>
               <div className="divider" />
-              <h2>Barcha Taomlar</h2>
+              <h2>Barcha Ritseptlar</h2>
               <p>Dunyoning turli burchaklaridan kelgan 50 ta mazali taom retsepti</p>
             </motion.div>
           </div>
@@ -417,8 +419,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Auth Modal */}
+      {/* Auth & Payment Modals */}
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {showPayment && selectedDish && <PaymentModal course={selectedDish} onClose={() => setShowPayment(false)} />}
     </>
   )
 }

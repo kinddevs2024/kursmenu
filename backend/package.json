@@ -25,6 +25,7 @@
     "mongoose": "^9.7.2",
     "multer": "^2.2.0",
     "node-telegram-bot-api": "^1.1.2",
+    "socket.io": "^4.8.3",
     "tesseract.js": "^7.0.0"
   }
 }

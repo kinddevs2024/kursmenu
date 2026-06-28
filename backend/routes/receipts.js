@@ -45,6 +45,16 @@ router.post('/upload', authMiddleware, upload.single('receipt'), async (req, res
     });
     
     await receipt.save();
+    
+    const user = await User.findById(req.user.sub);
+    const bot = getBotInstance();
+    if (bot && user && user.telegramId) {
+      bot.sendMessage(
+        user.telegramId,
+        `⏳ Sizning to'lovingiz tekshirilmoqda. Iltimos kuting...\n\nAgar qandaydir savollaringiz bo'lsa yoki yordam kerak bo'lsa, @umarbek_kd ga murojaat qiling.`
+      ).catch(e => console.error(e));
+    }
+
     res.json({ message: 'Receipt uploaded successfully', receipt });
   } catch (err) {
     console.error(err);
@@ -76,17 +86,22 @@ router.post('/admin/:id/verify', async (req, res) => {
     if (status === 'approved') {
       await User.findByIdAndUpdate(receipt.userId._id, { isPremium: true });
       
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('payment_approved', { userId: receipt.userId._id.toString() });
+      }
+
       if (bot) {
         bot.sendMessage(
           receipt.userId.telegramId,
-          `✅ Sizning to'lovingiz tasdiqlandi! Barcha kurslar endi ochiq. Yaxshi o'rganishlar!`
+          `✅ Sizning to'lovingiz tasdiqlandi! Barcha kurslar endi ochiq. Yaxshi o'rganishlar!\n\nAgar qandaydir savollaringiz bo'lsa yoki xatolik yuz bersa, iltimos @umarbek_kd ga murojaat qiling.`
         ).catch(e => console.error(e));
       }
     } else if (status === 'rejected') {
       if (bot) {
         bot.sendMessage(
           receipt.userId.telegramId,
-          `❌ Sizning to'lovingiz qabul qilinmadi.\nSabab: ${message || 'To\'lov summasi kam'}\nIltimos tekshirib qaytadan urinib ko'ring.`
+          `❌ Sizning to'lovingiz qabul qilinmadi.\nSabab: ${message || 'To\'lov summasi kam'}\nIltimos tekshirib qaytadan urinib ko'ring.\n\nSavollaringiz bo'lsa @umarbek_kd ga murojaat qiling.`
         ).catch(e => console.error(e));
       }
     }

@@ -48,6 +48,7 @@
   --hero-bg-2: #FAF4EA;
   --hero-bg-3: #F5ECD8;
   --nav-bg: rgba(254, 252, 248, 0.92);
+  --footer-bg: #1C1108;
 }
 
 .dark-theme {
@@ -75,6 +76,7 @@
   --hero-bg-2: #241A17;
   --hero-bg-3: #2F211D;
   --nav-bg: rgba(26, 20, 18, 0.92);
+  --footer-bg: #0F0A08;
 
   --swiper-navigation-color: #F5F0E8 !important;
   --swiper-pagination-color: #F5F0E8 !important;
@@ -791,7 +793,7 @@ p  { font-size: 1rem; color: var(--text-secondary); line-height: 1.7; }
 
 .form-input:focus {
   border-color: var(--accent);
-  background: #fff;
+  background: var(--warm-white);
   box-shadow: 0 0 0 3px rgba(139, 26, 42, 0.08);
 }
 
@@ -989,7 +991,7 @@ p  { font-size: 1rem; color: var(--text-secondary); line-height: 1.7; }
 
 /* ---- Footer ---- */
 .footer {
-  background: var(--text-primary);
+  background: var(--footer-bg);
   color: rgba(255,255,255,0.7);
   padding: 60px 0 32px;
   margin-top: auto;

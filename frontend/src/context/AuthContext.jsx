@@ -1,4 +1,8 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import axios from 'axios'
+import { io } from 'socket.io-client'
+
+const API = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '')
 
 const AuthContext = createContext(null)
 
@@ -17,6 +21,8 @@ export function AuthProvider({ children }) {
         setToken(null)
         localStorage.removeItem('access_token')
       }
+    } else {
+      setUser(null)
     }
   }, [token])
 
@@ -32,12 +38,47 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
+  const refreshProfile = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await axios.get(`${API}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.data.accessToken && res.data.accessToken !== token) {
+        login(res.data.accessToken)
+      }
+    } catch (err) {
+      // Ignore errors (e.g. if token expired, we let the interceptors handle it or just do nothing here)
+    }
+  }, [token])
+
+  // Automatically refresh profile and setup WebSocket for instant updates
+  useEffect(() => {
+    if (token && user && !user.isPremium) {
+      refreshProfile()
+      
+      const socket = io(API, {
+        withCredentials: true
+      });
+
+      socket.on('payment_approved', (data) => {
+        if (data.userId === user.id) {
+          refreshProfile()
+        }
+      });
+
+      return () => {
+        socket.disconnect();
+      }
+    }
+  }, [token, user?.id, user?.isPremium, refreshProfile])
+
   const hasPurchased = (courseId) => {
     return user?.isPremium === true;
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, hasPurchased }}>
+    <AuthContext.Provider value={{ user, token, login, logout, hasPurchased, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )
