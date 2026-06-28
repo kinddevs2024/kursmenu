@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import axios from 'axios'
 import { io } from 'socket.io-client'
 
@@ -9,6 +9,7 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(() => localStorage.getItem('access_token'))
+  const tmaAttempted = useRef(false)
 
   useEffect(() => {
     if (token) {
@@ -55,7 +56,8 @@ export function AuthProvider({ children }) {
   // Telegram Mini App Auto-Login
   useEffect(() => {
     const initData = window.Telegram?.WebApp?.initData;
-    if (initData) {
+    if (initData && !tmaAttempted.current) {
+      tmaAttempted.current = true;
       axios.post(`${API}/api/auth/telegram-mini-app`, { initData })
         .then(res => {
           if (res.data.accessToken) {
@@ -66,7 +68,7 @@ export function AuthProvider({ children }) {
           console.error("TMA login error:", err);
         });
     }
-  }, [token, login]);
+  }, [login]);
 
   // Automatically refresh profile and setup WebSocket for instant updates
   useEffect(() => {
