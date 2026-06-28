@@ -8,8 +8,8 @@ export default function Footer() {
         <div>
           <div className="footer-brand-name">🍽️ Har Kunli Menyu</div>
           <p className="footer-brand-desc">
-            50 dan ortiq taom retseptlari. Uyda professional darajada Shirinlik Tayyorlangshni o'rganing.
-            Video darslar, bosqichma-bosqich ko'rsatmalar va shaxsiy maslahatlar.
+            50 dan ortiq Shirinlik retseptlari. Uyda professional darajada Shirinlik Tayyorlangshni o'rganing.
+            Rasm darslar, bosqichma-bosqich ko'rsatmalar.
           </p>
           <div className="footer-social" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
             <a href="https://www.instagram.com/har_kunli_menyu/" target="_blank" rel="noopener noreferrer" title="Instagram" style={{ color: 'inherit', display: 'flex' }}>

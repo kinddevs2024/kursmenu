@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { getBotInstance } = require('../bot');
+const crypto = require('crypto');
 
 // Helper to generate 6‑digit code
 function generateCode() {
@@ -166,6 +167,63 @@ router.get('/me', async (req, res) => {
     res.json({ accessToken });
   } catch (err) {
     res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+// POST /api/auth/telegram-mini-app
+router.post('/telegram-mini-app', async (req, res) => {
+  const { initData } = req.body;
+  if (!initData) return res.status(400).json({ error: 'No initData provided' });
+
+  try {
+    const urlParams = new URLSearchParams(initData);
+    const hash = urlParams.get('hash');
+    urlParams.delete('hash');
+    
+    const dataCheckString = Array.from(urlParams.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}=${value}`)
+      .join('\n');
+      
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken || botToken === 'YOUR_TELEGRAM_BOT_TOKEN') {
+      return res.status(500).json({ error: 'Bot token not configured' });
+    }
+
+    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+    const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+    
+    if (calculatedHash !== hash) {
+      return res.status(401).json({ error: 'Invalid initData signature' });
+    }
+
+    const userStr = urlParams.get('user');
+    if (!userStr) return res.status(400).json({ error: 'No user data' });
+    
+    const tgUser = JSON.parse(userStr);
+    const telegramId = String(tgUser.id);
+    
+    let user = await User.findOne({ telegramId });
+    if (!user) {
+      user = new User({
+        telegramId,
+        name: [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || 'Foydalanuvchi',
+        username: tgUser.username || ''
+      });
+      await user.save();
+    }
+    
+    const accessToken = jwt.sign(
+      { sub: user._id, roles: user.roles, isPremium: user.isPremium, photoUrl: user.photoUrl },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_ACCESS_TTL || '15m' }
+    );
+    const refreshToken = jwt.sign({ sub: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.JWT_REFRESH_TTL || '7d' });
+    
+    res.json({ accessToken, refreshToken });
+  } catch (err) {
+    console.error('TMA login error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

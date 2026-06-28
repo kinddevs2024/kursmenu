@@ -5,6 +5,7 @@ const path = require('path');
 const Receipt = require('../models/Receipt');
 const User = require('../models/User');
 const { getBotInstance } = require('../bot');
+const crypto = require('crypto');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -84,7 +85,8 @@ router.post('/admin/:id/verify', async (req, res) => {
     const bot = getBotInstance();
 
     if (status === 'approved') {
-      await User.findByIdAndUpdate(receipt.userId._id, { isPremium: true });
+      const loginToken = crypto.randomBytes(32).toString('hex');
+      await User.findByIdAndUpdate(receipt.userId._id, { isPremium: true, loginToken });
       
       const io = req.app.get('io');
       if (io) {
@@ -92,10 +94,25 @@ router.post('/admin/:id/verify', async (req, res) => {
       }
 
       if (bot) {
-        bot.sendMessage(
-          receipt.userId.telegramId,
-          `✅ Sizning to'lovingiz tasdiqlandi! Barcha kurslar endi ochiq. Yaxshi o'rganishlar!\n\nAgar qandaydir savollaringiz bo'lsa yoki xatolik yuz bersa, iltimos @umarbek_kd ga murojaat qiling.`
-        ).catch(e => console.error(e));
+        const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/?token=${loginToken}`;
+        const isLocal = loginUrl.includes('localhost') || loginUrl.includes('127.0.0.1');
+
+        if (isLocal) {
+          bot.sendMessage(
+            receipt.userId.telegramId,
+            `✅ Sizning to'lovingiz tasdiqlandi! Barcha kurslar endi ochiq. Yaxshi o'rganishlar!\n\nSaytga kirish: ${loginUrl}\n\nAgar qandaydir savollaringiz bo'lsa yoki xatolik yuz bersa, iltimos @umarbek_kd ga murojaat qiling.`
+          ).catch(e => console.error(e));
+        } else {
+          bot.sendMessage(
+            receipt.userId.telegramId,
+            `✅ Sizning to'lovingiz tasdiqlandi! Barcha kurslar endi ochiq. Yaxshi o'rganishlar!\n\nAgar qandaydir savollaringiz bo'lsa yoki xatolik yuz bersa, iltimos @umarbek_kd ga murojaat qiling.`,
+            {
+              reply_markup: {
+                inline_keyboard: [[{ text: '👉 Ochish', url: loginUrl }]]
+              }
+            }
+          ).catch(e => console.error(e));
+        }
       }
     } else if (status === 'rejected') {
       if (bot) {

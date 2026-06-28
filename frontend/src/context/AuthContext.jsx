@@ -48,9 +48,25 @@ export function AuthProvider({ children }) {
         login(res.data.accessToken)
       }
     } catch (err) {
-      // Ignore errors (e.g. if token expired, we let the interceptors handle it or just do nothing here)
+      // Ignore errors
     }
   }, [token])
+
+  // Telegram Mini App Auto-Login
+  useEffect(() => {
+    const initData = window.Telegram?.WebApp?.initData;
+    if (initData && !token) {
+      axios.post(`${API}/api/auth/telegram-mini-app`, { initData })
+        .then(res => {
+          if (res.data.accessToken) {
+            login(res.data.accessToken);
+          }
+        })
+        .catch(err => {
+          console.error("TMA login error:", err);
+        });
+    }
+  }, [token, login]);
 
   // Automatically refresh profile and setup WebSocket for instant updates
   useEffect(() => {

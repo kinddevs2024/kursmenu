@@ -113,7 +113,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/edmission
     await seedDatabase();
 
     if (!isVercel) {
-      initBot();
+      initBot(io);
 
       server.listen(PORT, () => {
         console.log(`🚀 Backend server is running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode.`);

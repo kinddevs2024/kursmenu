@@ -19,14 +19,14 @@ const fadeUp = {
 
 const FEATURES = [
   { icon: '📸', title: 'Rasm darsliklar', desc: 'sifatli rasm ko\'rsatmalar bilan har bir bosqichni tushuning' },
-  { icon: '🍳', title: '50+ Retsept', desc: 'Hammaga yoshda mumkin bo`lgan, 50 dan ortiq taom retsepti' },
+  { icon: '🍳', title: '50+ Retsept', desc: 'Hammaga yoshda mumkin bo`lgan, 50 dan ortiq shirinlik retseptlari' },
   { icon: '📱', title: 'Qulay kirish', desc: 'Telefon, planshet yoki kompyuterdan istalgan vaqtda kirish' },
   { icon: '👨‍🍳', title: 'Professional', desc: 'Professional oshpaz tajribasi asosida tayyorlangan darslar' },
 ]
 
 const TESTIMONIALS = [
   { text: 'Kurs juda foydali bo\'ldi! Endi oilamga restoran darajasida Shirinlik Tayyorlangy olayman.', name: 'Malika T.', role: 'O\'quvchi', stars: 5 },
-  { text: 'Har bir retsept aniq va tushunarli. Befstroganov darsi mening sevimli darskim!', name: 'Jasur K.', role: 'O\'quvchi', stars: 5 },
+  { text: 'Har bir retsept aniq va tushunarli. Chizkeyk darsi mening sevimli darskim!', name: 'Muslima K.', role: 'O\'quvchi', stars: 5 },
   { text: 'Telegram orqali kirish juda qulay. Bir daqiqada tizimga kirdim.', name: 'Dilnoza A.', role: 'O\'quvchi', stars: 5 },
 ]
 
@@ -146,12 +146,11 @@ export default function HomePage() {
             </motion.h1>
 
             <motion.p className="hero-subtitle" variants={fadeUp} custom={2} initial="hidden" animate="visible">
-              50 ta taomni uyda professional darajada
+              50 ta shirinliklarni uyda professional darajada
             </motion.p>
 
             <motion.p className="hero-desc" variants={fadeUp} custom={3} initial="hidden" animate="visible">
-              Shakshuka, Biryani, Befstroganov, Fish & Chips va boshqa 50 ta mazali taomni
-              video darslar orqali o'rganing. Bir martalik to'lov — umrboqiy kirish.
+              Bir martalik to'lov — umrboqiy kirish.
             </motion.p>
 
             <motion.div className="hero-actions" variants={fadeUp} custom={4} initial="hidden" animate="visible">
@@ -235,8 +234,8 @@ export default function HomePage() {
             <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
               <span className="badge badge-gold" style={{ marginBottom: 12, display: 'inline-block' }}>Kurslar</span>
               <div className="divider" />
-              <h2>Barcha Ritseptlar</h2>
-              <p>Dunyoning turli burchaklaridan kelgan 50 ta mazali taom retsepti</p>
+              <h2>Barcha Retseptlar</h2>
+              <p>Dunyoning turli burchaklaridan 50 ta mazali shirinlik retseptlari</p>
             </motion.div>
           </div>
 

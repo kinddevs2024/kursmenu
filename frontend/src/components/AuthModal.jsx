@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import axios from 'axios'
+import io from 'socket.io-client'
 
 const API = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '')
 
@@ -13,6 +14,25 @@ export default function AuthModal({ onClose }) {
   const [telegramId, setTelegramId] = useState('')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sessionId] = useState(() => crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15))
+
+  useEffect(() => {
+    if (tab === 'register') {
+      const socket = io(API, { withCredentials: true })
+      
+      socket.on('login_success', (data) => {
+        if (data.sessionId === sessionId && data.accessToken) {
+          toast.success("Muvaffaqiyatli kirdingiz!")
+          login(data.accessToken)
+          onClose()
+        }
+      })
+
+      return () => {
+        socket.disconnect()
+      }
+    }
+  }, [tab, sessionId, login, onClose])
 
   const handleSendCode = async (e) => {
     e.preventDefault()
@@ -101,7 +121,7 @@ export default function AuthModal({ onClose }) {
               </div>
 
               <a
-                href={`https://t.me/HarKunliMenyuBot?start=auth`}
+                href={`https://t.me/HarKunliMenyuBot?start=login_${sessionId}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-primary"
