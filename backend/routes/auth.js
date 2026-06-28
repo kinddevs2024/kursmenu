@@ -203,15 +203,26 @@ router.post('/telegram-mini-app', async (req, res) => {
     const tgUser = JSON.parse(userStr);
     const telegramId = String(tgUser.id);
     
-    let user = await User.findOne({ telegramId });
-    if (!user) {
-      user = new User({
-        telegramId,
-        name: [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || 'Foydalanuvchi',
-        username: tgUser.username || ''
-      });
-      await user.save();
+    const updateData = {
+      telegramId,
+      username: tgUser.username || '',
+      firstName: tgUser.first_name || '',
+      lastName: tgUser.last_name || '',
+      name: [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || 'Foydalanuvchi',
+      languageCode: tgUser.language_code || '',
+      lastLoginDate: new Date()
+    };
+
+    if (tgUser.photo_url) {
+      updateData.photoUrl = tgUser.photo_url;
     }
+
+    // Find and update or create
+    let user = await User.findOneAndUpdate(
+      { telegramId },
+      { $set: updateData },
+      { new: true, upsert: true }
+    );
     
     const accessToken = jwt.sign(
       { sub: user._id, roles: user.roles, isPremium: user.isPremium, photoUrl: user.photoUrl },

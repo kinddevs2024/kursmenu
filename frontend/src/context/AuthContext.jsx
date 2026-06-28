@@ -55,6 +55,11 @@ export function AuthProvider({ children }) {
 
   // Telegram Mini App Auto-Login
   useEffect(() => {
+    // Notify Telegram that the Mini App is ready
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.ready();
+    }
+    
     const initData = window.Telegram?.WebApp?.initData;
     if (initData && !tmaAttempted.current) {
       tmaAttempted.current = true;

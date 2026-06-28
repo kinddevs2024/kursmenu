@@ -6,7 +6,11 @@ const userSchema = new mongoose.Schema({
   telegramCodeExpires: { type: Date },
   loginToken: { type: String }, // Token for auto-login via link
   username: { type: String },
-  name: { type: String },
+  name: { type: String }, // Keep for legacy
+  firstName: { type: String },
+  lastName: { type: String },
+  languageCode: { type: String },
+  lastLoginDate: { type: Date },
   phone: { type: String },
   email: { type: String },
   photoUrl: { type: String },
