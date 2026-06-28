@@ -55,7 +55,7 @@ export function AuthProvider({ children }) {
   // Telegram Mini App Auto-Login
   useEffect(() => {
     const initData = window.Telegram?.WebApp?.initData;
-    if (initData && !token) {
+    if (initData) {
       axios.post(`${API}/api/auth/telegram-mini-app`, { initData })
         .then(res => {
           if (res.data.accessToken) {
