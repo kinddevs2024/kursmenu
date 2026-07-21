@@ -47,10 +47,13 @@ function getRemoteSlideUrl(folderName, filename) {
 async function proxyRemoteSlide(res, remoteUrl, filename, title) {
   try {
     const response = await fetch(remoteUrl);
-    if (!response.ok) return sendPlaceholderSlide(res, filename, title);
+    const contentType = response.headers.get('content-type') || '';
+    if (!response.ok || !contentType.startsWith('image/')) {
+      return sendPlaceholderSlide(res, filename, title);
+    }
 
     const image = Buffer.from(await response.arrayBuffer());
-    res.setHeader('Content-Type', response.headers.get('content-type') || 'image/png');
+    res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=31536000');
     return res.send(image);
   } catch (error) {
