@@ -27,6 +27,7 @@ function initBot(io, options = {}) {
     handlersRegistered = true;
 
     bot.on('message', async (msg) => {
+      try {
       const chatId = msg.chat.id;
       const text = msg.text || '';
       const telegramId = String(chatId);
@@ -140,6 +141,16 @@ function initBot(io, options = {}) {
             console.error('Error saving user in bot:', err);
             return bot.sendMessage(chatId, '❌ Xatolik yuz berdi. Iltimos qayta /start bosing.');
           }
+        }
+      }
+      } catch (error) {
+        const chatId = msg.chat?.id;
+        console.error('[Telegram Bot] Message handler error:', error.message);
+        if (chatId) {
+          await bot.sendMessage(
+            chatId,
+            'Bot ishlayapti, lekin ma\'lumotlar bazasiga ulanish vaqtincha kechikmoqda. Iltimos, /start buyrug\'ini yana yuboring.'
+          ).catch(sendError => console.error('[Telegram Bot] Send error:', sendError.message));
         }
       }
     });

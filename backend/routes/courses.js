@@ -44,6 +44,21 @@ function getRemoteSlideUrl(folderName, filename) {
   return `${baseUrl.replace(/\/$/, '')}/${encodeURIComponent(folderName)}/${encodeURIComponent(filename)}`;
 }
 
+async function proxyRemoteSlide(res, remoteUrl, filename, title) {
+  try {
+    const response = await fetch(remoteUrl);
+    if (!response.ok) return sendPlaceholderSlide(res, filename, title);
+
+    const image = Buffer.from(await response.arrayBuffer());
+    res.setHeader('Content-Type', response.headers.get('content-type') || 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=31536000');
+    return res.send(image);
+  } catch (error) {
+    console.error('[Course Assets] Proxy error:', error.message);
+    return sendPlaceholderSlide(res, filename, title);
+  }
+}
+
 // GET /api/courses - list all courses
 router.get('/', async (req, res) => {
   try {
@@ -108,10 +123,10 @@ router.get('/:id/slides/:filename', async (req, res) => {
     const folderName = course.slidesPath || course.slug || req.params.id;
     const filePath = path.join(slidesFullPath, folderName, filename);
     
-    res.sendFile(filePath, err => {
+    res.sendFile(filePath, async err => {
       if (err) {
         const remoteUrl = getRemoteSlideUrl(folderName, filename);
-        if (remoteUrl) return res.redirect(302, remoteUrl);
+        if (remoteUrl) return proxyRemoteSlide(res, remoteUrl, filename, course.title);
         sendPlaceholderSlide(res, filename, course.title);
       }
     });
