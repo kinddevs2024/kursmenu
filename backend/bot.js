@@ -35,6 +35,8 @@ function initBot(io, options = {}) {
 
       // Handle /start
       if (text.startsWith('/start')) {
+        await bot.sendMessage(chatId, 'Xush kelibsiz! Bot bilan aloqa o\'rnatildi. Ma\'lumotlaringiz tekshirilmoqda...');
+
         let sessionId = null;
         if (text.includes('login_')) {
           sessionId = text.split('login_')[1];
