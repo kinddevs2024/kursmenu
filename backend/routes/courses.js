@@ -38,6 +38,12 @@ function sendPlaceholderSlide(res, filename, title = 'Course') {
   `);
 }
 
+function getRemoteSlideUrl(folderName, filename) {
+  const baseUrl = process.env.COURSE_ASSETS_URL;
+  if (!baseUrl) return null;
+  return `${baseUrl.replace(/\/$/, '')}/${encodeURIComponent(folderName)}/${encodeURIComponent(filename)}`;
+}
+
 // GET /api/courses - list all courses
 router.get('/', async (req, res) => {
   try {
@@ -104,6 +110,8 @@ router.get('/:id/slides/:filename', async (req, res) => {
     
     res.sendFile(filePath, err => {
       if (err) {
+        const remoteUrl = getRemoteSlideUrl(folderName, filename);
+        if (remoteUrl) return res.redirect(302, remoteUrl);
         sendPlaceholderSlide(res, filename, course.title);
       }
     });

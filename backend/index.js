@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 
-const { initBot } = require('./bot');
+const { initBot, processUpdate } = require('./bot');
 const Course = require('./models/Course');
 const authRoutes = require('./routes/auth');
 const courseRoutes = require('./routes/courses');
@@ -56,6 +56,25 @@ app.use('/api/', apiLimiter);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+if (process.env.VERCEL) {
+  initBot(io, { polling: false });
+}
+
+app.post('/api/telegram/webhook', (req, res) => {
+  try {
+    const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+    const providedSecret = req.get('x-telegram-bot-api-secret-token');
+    if (expectedSecret && providedSecret !== expectedSecret) {
+      return res.sendStatus(403);
+    }
+    processUpdate(req.body);
+    res.sendStatus(200);
+  } catch (error) {
+    console.error('[Telegram Bot] Webhook error:', error.message);
+    res.sendStatus(500);
+  }
+});
 
 // Serve Slide Images Static Folder
 const slidesDirSetting = process.env.SLIDES_DIR || '../generated-slides';

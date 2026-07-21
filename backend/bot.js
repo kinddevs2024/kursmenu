@@ -6,11 +6,9 @@ const jwt = require('jsonwebtoken');
 
 let bot = null;
 let globalIo = null;
+let handlersRegistered = false;
 
-// In-memory state for bot registration flow
-const userStates = {};
-
-function initBot(io) {
+function initBot(io, options = {}) {
   if (io) globalIo = io;
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -21,7 +19,12 @@ function initBot(io) {
   }
 
   try {
-    bot = new TelegramBot(token, { polling: true });
+    if (!bot) {
+      bot = new TelegramBot(token, { polling: options.polling !== false });
+    }
+
+    if (handlersRegistered) return bot;
+    handlersRegistered = true;
 
     bot.on('message', async (msg) => {
       const chatId = msg.chat.id;
@@ -60,7 +63,11 @@ function initBot(io) {
           return;
         }
 
-        userStates[chatId] = { step: 'ASK_NAME', username, sessionId };
+        await User.findOneAndUpdate(
+          { telegramId },
+          { $set: { username, botStep: 'ASK_NAME', botSessionId: sessionId || '' } },
+          { upsert: true, new: true }
+        );
         return bot.sendMessage(
           chatId,
           '👋 Xush kelibsiz! Iltimos, ismingizni kiriting:'
@@ -68,11 +75,12 @@ function initBot(io) {
       }
 
       // Handle state machine
-      const state = userStates[chatId];
-      if (state) {
-        if (state.step === 'ASK_NAME') {
+      const state = await User.findOne({ telegramId });
+      if (state?.botStep) {
+        if (state.botStep === 'ASK_NAME') {
           state.name = text;
-          state.step = 'ASK_PHONE';
+          state.botStep = 'ASK_PHONE';
+          await state.save();
           
           return bot.sendMessage(
             chatId,
@@ -89,26 +97,25 @@ function initBot(io) {
           );
         }
 
-        if (state.step === 'ASK_PHONE' && msg.contact) {
+        if (state.botStep === 'ASK_PHONE' && msg.contact) {
           const phone = msg.contact.phone_number;
           
           try {
             const loginToken = crypto.randomBytes(32).toString('hex');
             
             // Upsert user
-            const existingUser = await User.findOneAndUpdate(
+            await User.findOneAndUpdate(
               { telegramId },
               { 
                 username: state.username,
                 name: state.name,
                 phone: phone,
-                loginToken: loginToken
+                loginToken: loginToken,
+                botStep: '',
+                botSessionId: ''
               },
               { upsert: true, new: true }
             );
-
-            // Clean state
-            delete userStates[chatId];
 
             const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/?token=${loginToken}`;
 
@@ -149,5 +156,10 @@ function initBot(io) {
 
 module.exports = {
   initBot,
-  getBotInstance: () => bot
+  getBotInstance: () => bot,
+  processUpdate(update) {
+    if (!bot) initBot(null, { polling: false });
+    if (!bot) throw new Error('Telegram bot is not configured');
+    bot.processUpdate(update);
+  }
 };

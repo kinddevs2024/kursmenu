@@ -12,6 +12,8 @@ const userSchema = new mongoose.Schema({
   languageCode: { type: String },
   lastLoginDate: { type: Date },
   phone: { type: String },
+  botStep: { type: String },
+  botSessionId: { type: String },
   email: { type: String },
   photoUrl: { type: String },
   googleId: { type: String },
