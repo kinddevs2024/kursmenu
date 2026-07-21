@@ -139,6 +139,28 @@ router.post('/link-login', async (req, res) => {
   const { token } = req.body;
   if (!token) return res.status(400).json({ error: 'Token required' });
   try {
+    try {
+      const link = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+      if (link.type === 'telegram-link' && link.telegramId) {
+        const claims = {
+          sub: `telegram:${link.telegramId}`,
+          telegramId: link.telegramId,
+          username: link.username || '',
+          name: link.name || '',
+          roles: [],
+          isPremium: false,
+          photoUrl: null
+        };
+        const accessToken = jwt.sign(claims, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: process.env.JWT_ACCESS_TTL || '15m' });
+        const refreshToken = jwt.sign(claims, process.env.JWT_REFRESH_SECRET || 'fallback_refresh_secret', { expiresIn: process.env.JWT_REFRESH_TTL || '7d' });
+        return res.json({ accessToken, refreshToken });
+      }
+    } catch (linkError) {
+      if (linkError.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'Havola muddati tugagan. Botga /start yuboring.' });
+      }
+    }
+
     const user = await User.findOne({ loginToken: token });
     if (!user) return res.status(401).json({ error: 'Yaroqsiz yoki eskirgan token' });
 
@@ -161,6 +183,22 @@ router.get('/me', async (req, res) => {
   if (!token) return res.status(401).json({ error: 'No token' });
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    if (String(decoded.sub).startsWith('telegram:')) {
+      const accessToken = jwt.sign(
+        {
+          sub: decoded.sub,
+          telegramId: decoded.telegramId,
+          username: decoded.username || '',
+          name: decoded.name || '',
+          roles: decoded.roles || [],
+          isPremium: decoded.isPremium || false,
+          photoUrl: decoded.photoUrl || null
+        },
+        process.env.JWT_SECRET || 'fallback_secret',
+        { expiresIn: process.env.JWT_ACCESS_TTL || '15m' }
+      );
+      return res.json({ accessToken });
+    }
     const user = await User.findById(decoded.sub);
     if (!user) return res.status(404).json({ error: 'User not found' });
     const accessToken = jwt.sign({ sub: user._id, roles: user.roles, isPremium: user.isPremium, photoUrl: user.photoUrl }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_ACCESS_TTL || '15m' });
