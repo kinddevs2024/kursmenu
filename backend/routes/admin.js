@@ -1,9 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const DOMPurify = require('isomorphic-dompurify');
 const User = require('../models/User');
 const Course = require('../models/Course');
+
+const DOMPurify = {
+  sanitize(value) {
+    return String(value).replace(/[\u0000-\u001F\u007F]/g, '').trim();
+  }
+};
 
 // Admin Authentication Middleware
 function authenticateAdmin(req, res, next) {
