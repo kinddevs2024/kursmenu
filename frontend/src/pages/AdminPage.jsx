@@ -83,7 +83,7 @@ export default function AdminPage() {
                   display: 'flex', gap: 24, alignItems: 'flex-start'
                 }}>
                 
-                <img src={`${API}${r.receiptUrl}`} alt="Chek" style={{ width: 200, borderRadius: 8, border: '1px solid #eee' }} />
+                <img src={r.receiptUrl?.startsWith('http') ? r.receiptUrl : `${API}${r.receiptUrl}`} alt="Chek" style={{ width: 200, borderRadius: 8, border: '1px solid #eee' }} />
                 
                 <div style={{ flex: 1 }}>
                   <h3>Kurs ID: {r.courseId}</h3>

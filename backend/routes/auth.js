@@ -148,7 +148,7 @@ router.post('/link-login', async (req, res) => {
           username: link.username || '',
           name: link.name || '',
           roles: [],
-          isPremium: false,
+          isPremium: Boolean(link.isPremium),
           photoUrl: null
         };
         const accessToken = jwt.sign(claims, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: process.env.JWT_ACCESS_TTL || '15m' });
