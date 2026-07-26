@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { put, list, del } = require('@vercel/blob');
 const { getBotInstance } = require('../bot');
+const { saveTelegramUser } = require('../lib/telegramUserStore');
 
 const router = express.Router();
 const RECEIPT_DATA_PREFIX = 'receipts/data/';
@@ -133,7 +134,13 @@ router.post('/admin/:id/verify', async (req, res) => {
     const bot = getBotInstance();
     const telegramId = receipt.userId?.telegramId;
 
-    if (status === 'approved' && bot && telegramId) {
+    if (status === 'approved' && telegramId) {
+      await saveTelegramUser(telegramId, {
+        username: receipt.userId.username || '',
+        name: receipt.userId.name || '',
+        isPremium: true
+      });
+
       const loginToken = jwt.sign({
         type: 'telegram-link',
         telegramId,
@@ -143,11 +150,13 @@ router.post('/admin/:id/verify', async (req, res) => {
       }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '30d' });
       const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/?token=${encodeURIComponent(loginToken)}`;
 
-      await bot.sendMessage(
-        telegramId,
-        "✅ To'lovingiz tasdiqlandi. Barcha kurslar ochildi.",
-        { reply_markup: { inline_keyboard: [[{ text: 'Kurslarni ochish', url: loginUrl }]] } }
-      );
+      if (bot) {
+        await bot.sendMessage(
+          telegramId,
+          "✅ To'lovingiz tasdiqlandi. Barcha kurslar ochildi.",
+          { reply_markup: { inline_keyboard: [[{ text: 'Kurslarni ochish', url: loginUrl }]] } }
+        );
+      }
     } else if (status === 'rejected' && bot && telegramId) {
       await bot.sendMessage(
         telegramId,

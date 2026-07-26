@@ -27,10 +27,10 @@ export function AuthProvider({ children }) {
     }
   }, [token])
 
-  const login = (accessToken) => {
+  const login = useCallback((accessToken) => {
     localStorage.setItem('access_token', accessToken)
     setToken(accessToken)
-  }
+  }, [])
 
   const logout = () => {
     localStorage.removeItem('access_token')
@@ -66,6 +66,9 @@ export function AuthProvider({ children }) {
       axios.post(`${API}/api/auth/telegram-mini-app`, { initData })
         .then(res => {
           if (res.data.accessToken) {
+            if (res.data.refreshToken) {
+              localStorage.setItem('refresh_token', res.data.refreshToken)
+            }
             login(res.data.accessToken);
           }
         })

@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { getBotInstance } = require('../bot');
 const crypto = require('crypto');
+const { getTelegramUser, saveTelegramUser } = require('../lib/telegramUserStore');
 
 // Helper to generate 6‑digit code
 function generateCode() {
@@ -142,14 +143,25 @@ router.post('/link-login', async (req, res) => {
     try {
       const link = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
       if (link.type === 'telegram-link' && link.telegramId) {
+        let storedUser = null;
+        try {
+          storedUser = await saveTelegramUser(link.telegramId, {
+            username: link.username || undefined,
+            name: link.name || undefined,
+            ...(link.isPremium ? { isPremium: true } : {})
+          });
+        } catch (storeError) {
+          console.error('Telegram user store error:', storeError.message);
+        }
+
         const claims = {
           sub: `telegram:${link.telegramId}`,
           telegramId: link.telegramId,
-          username: link.username || '',
-          name: link.name || '',
-          roles: [],
-          isPremium: Boolean(link.isPremium),
-          photoUrl: null
+          username: storedUser?.username || link.username || '',
+          name: storedUser?.name || link.name || '',
+          roles: storedUser?.roles || [],
+          isPremium: Boolean(link.isPremium || storedUser?.isPremium),
+          photoUrl: storedUser?.photoUrl || null
         };
         const accessToken = jwt.sign(claims, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: process.env.JWT_ACCESS_TTL || '15m' });
         const refreshToken = jwt.sign(claims, process.env.JWT_REFRESH_SECRET || 'fallback_refresh_secret', { expiresIn: process.env.JWT_REFRESH_TTL || '7d' });
@@ -184,15 +196,22 @@ router.get('/me', async (req, res) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
     if (String(decoded.sub).startsWith('telegram:')) {
+      let storedUser = null;
+      try {
+        storedUser = await getTelegramUser(decoded.telegramId);
+      } catch (storeError) {
+        console.error('Telegram user refresh error:', storeError.message);
+      }
+
       const accessToken = jwt.sign(
         {
           sub: decoded.sub,
           telegramId: decoded.telegramId,
-          username: decoded.username || '',
-          name: decoded.name || '',
-          roles: decoded.roles || [],
-          isPremium: decoded.isPremium || false,
-          photoUrl: decoded.photoUrl || null
+          username: storedUser?.username || decoded.username || '',
+          name: storedUser?.name || decoded.name || '',
+          roles: storedUser?.roles || decoded.roles || [],
+          isPremium: Boolean(storedUser?.isPremium || decoded.isPremium),
+          photoUrl: storedUser?.photoUrl || decoded.photoUrl || null
         },
         process.env.JWT_SECRET || 'fallback_secret',
         { expiresIn: process.env.JWT_ACCESS_TTL || '15m' }
@@ -242,32 +261,44 @@ router.post('/telegram-mini-app', async (req, res) => {
     const telegramId = String(tgUser.id);
     
     const updateData = {
-      telegramId,
       username: tgUser.username || '',
-      firstName: tgUser.first_name || '',
-      lastName: tgUser.last_name || '',
       name: [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || 'Foydalanuvchi',
       languageCode: tgUser.language_code || '',
-      lastLoginDate: new Date()
+      lastLoginAt: new Date().toISOString()
     };
 
     if (tgUser.photo_url) {
       updateData.photoUrl = tgUser.photo_url;
     }
 
-    // Find and update or create
-    let user = await User.findOneAndUpdate(
-      { telegramId },
-      { $set: updateData },
-      { new: true, upsert: true }
-    );
+    const user = await saveTelegramUser(telegramId, updateData);
     
     const accessToken = jwt.sign(
-      { sub: user._id, roles: user.roles, isPremium: user.isPremium, photoUrl: user.photoUrl },
-      process.env.JWT_SECRET,
+      {
+        sub: `telegram:${telegramId}`,
+        telegramId,
+        username: user.username || '',
+        name: user.name || '',
+        roles: user.roles || [],
+        isPremium: Boolean(user.isPremium),
+        photoUrl: user.photoUrl || null
+      },
+      process.env.JWT_SECRET || 'fallback_secret',
       { expiresIn: process.env.JWT_ACCESS_TTL || '15m' }
     );
-    const refreshToken = jwt.sign({ sub: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.JWT_REFRESH_TTL || '7d' });
+    const refreshToken = jwt.sign(
+      {
+        sub: `telegram:${telegramId}`,
+        telegramId,
+        username: user.username || '',
+        name: user.name || '',
+        roles: user.roles || [],
+        isPremium: Boolean(user.isPremium),
+        photoUrl: user.photoUrl || null
+      },
+      process.env.JWT_REFRESH_SECRET || 'fallback_refresh_secret',
+      { expiresIn: process.env.JWT_REFRESH_TTL || '7d' }
+    );
     
     res.json({ accessToken, refreshToken });
   } catch (err) {
