@@ -1,39 +1,12 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const COURSE_MANIFEST = require('./courseManifest.json');
 
 const slidesDirSetting = process.env.SLIDES_DIR || '../generated-slides';
 const slidesFullPath = path.resolve(__dirname, slidesDirSetting);
-const DEFAULT_SLUGS = [
-  'baileys-choux-pastries-generated',
-  'birds-milk-cake-generated',
-  'black-forest-cake-direct',
-  'blackcurrant-chocolate-cake-direct',
-  'chocolate-blackcurrant-cake',
-  'chocolate-chocolate-cake-direct',
-  'chocolate-eclairs-generated',
-  'chocolate-madness-cheesecake-zara-generated',
-  'cold-cherry-cheesecake-zara-generated',
-  'cranberry-mascarpone-cake-direct',
-  'custard-crepe-cake-direct',
-  'custard-rings-curd-cream-generated',
-  'honey-cake-atelier-direct',
-  'lemon-glazed-cakes-generated',
-  'lemon-meringue-tartlets-generated',
-  'mousse-chocolate-passionfruit-generated',
-  'napoleon-plombir-cake-generated',
-  'new-york-cheesecake-zara-generated',
-  'nut-caramel-tartlets-generated',
-  'orange-cream-tart-generated',
-  'penechki-pastries-generated 1',
-  'royal-vatrushka-zara-generated',
-  'strawberry-custard-tart-generated',
-  'three-chocolates-cake-direct 1',
-  'tiramisu-cheesecake-zara-generated',
-  'triple-chocolate-cheesecake-zara-generated',
-  'whoopie-pie-cream-generated',
-  'yumbriki-generated',
-];
+const MANIFEST_BY_SLUG = new Map(COURSE_MANIFEST.map((course) => [course.slug, course]));
+const DEFAULT_SLUGS = COURSE_MANIFEST.map((course) => course.slug);
 
 function stableId(slug) {
   return crypto.createHash('md5').update(slug).digest('hex').slice(0, 24);
@@ -51,11 +24,13 @@ function toTitle(slug) {
     .join(' ');
 }
 
-function countSlides(dirPath) {
+function listSlideFiles(dirPath) {
   try {
-    return fs.readdirSync(dirPath).filter((file) => /^slide-\d+\.png$/i.test(file)).length;
+    return fs.readdirSync(dirPath)
+      .filter((file) => /^slide-\d+\.(png|webp|jpe?g)$/i.test(file))
+      .sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
   } catch {
-    return 10;
+    return [];
   }
 }
 
@@ -75,6 +50,10 @@ function difficultyFor(slug) {
 function buildCourse(slug, dirPath) {
   const title = toTitle(slug) || 'Pastry Course';
   const difficulty = difficultyFor(slug);
+  const localSlideFiles = listSlideFiles(dirPath);
+  const slidesFiles = localSlideFiles.length > 0
+    ? localSlideFiles
+    : (MANIFEST_BY_SLUG.get(slug)?.slidesFiles || []);
 
   return {
     _id: stableId(slug),
@@ -84,7 +63,8 @@ function buildCourse(slug, dirPath) {
     category: categoryFor(slug),
     priceCents: 12500000,
     slidesPath: slug,
-    slidesCount: countSlides(dirPath),
+    slidesCount: slidesFiles.length || 10,
+    slidesFiles,
     difficulty,
     prepTime: difficulty === 'Easy' ? '45 min' : difficulty === 'Medium' ? '1.5 hours' : '3 hours',
     ingredients: ['Flour', 'Butter', 'Sugar', 'Cream', 'Eggs'],
@@ -101,16 +81,13 @@ function buildCourse(slug, dirPath) {
 }
 
 function getFallbackCourses() {
-  if (!fs.existsSync(slidesFullPath)) {
-    return DEFAULT_SLUGS.map((slug) => buildCourse(slug, path.join(slidesFullPath, slug)));
-  }
-
-  const localSlugs = fs.readdirSync(slidesFullPath)
-    .filter((file) => {
+  const localSlugs = fs.existsSync(slidesFullPath)
+    ? fs.readdirSync(slidesFullPath).filter((file) => {
       const fullPath = path.join(slidesFullPath, file);
       return fs.statSync(fullPath).isDirectory() && !/wrong-overlay-do-not-use/i.test(file);
-    });
-  const slugs = localSlugs.length > 0 ? localSlugs : DEFAULT_SLUGS;
+    })
+    : [];
+  const slugs = [...new Set([...DEFAULT_SLUGS, ...localSlugs])];
 
   return slugs.map((slug) => buildCourse(slug, path.join(slidesFullPath, slug)));
 }
