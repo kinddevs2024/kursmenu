@@ -65,14 +65,28 @@ async function proxyRemoteSlide(res, remoteUrl, filename, title) {
 // GET /api/courses - list all courses
 router.get('/', async (req, res) => {
   try {
+    const fallbackCourses = getFallbackCourses();
+
     if (isMongoReady()) {
-      const courses = await Course.find();
-      if (courses.length > 0) {
-        return res.json(courses);
+      const databaseCourses = await Course.find().lean();
+      if (databaseCourses.length > 0) {
+        const databaseBySlug = new Map(
+          databaseCourses.filter((course) => course.slug).map((course) => [course.slug, course])
+        );
+        const fallbackSlugs = new Set(fallbackCourses.map((course) => course.slug));
+        const mergedCourses = fallbackCourses.map((course) => ({
+          ...course,
+          ...(databaseBySlug.get(course.slug) || {})
+        }));
+        const databaseOnlyCourses = databaseCourses.filter(
+          (course) => !course.slug || !fallbackSlugs.has(course.slug)
+        );
+
+        return res.json([...mergedCourses, ...databaseOnlyCourses]);
       }
     }
 
-    res.json(getFallbackCourses());
+    res.json(fallbackCourses);
   } catch (err) {
     console.error(err);
     res.json(getFallbackCourses());
