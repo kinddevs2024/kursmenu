@@ -67,6 +67,7 @@ export default function CoursePage() {
   const [isBlackedOut, setIsBlackedOut] = useState(false)
   const slideViewerRef = useRef(null)
   const purchased = hasPurchased(id)
+  const hasAccess = purchased || course?.isFree || course?.priceCents === 0
 
   const toggleFullscreen = async () => {
     if (!isFullscreen) {
@@ -207,6 +208,7 @@ export default function CoursePage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                 <span style={{ fontSize: '2.5rem' }}>{course.emoji || '🍽️'}</span>
                 <span className="badge badge-gold">{course.category}</span>
+                {course.isFree && <span className="badge badge-accent">Bepul</span>}
               </div>
               <h1 style={{ marginBottom: 16 }}>{course.title}</h1>
               <p style={{ fontSize: '1.1rem', maxWidth: 640, marginBottom: 24, lineHeight: 1.6 }}>
@@ -224,7 +226,7 @@ export default function CoursePage() {
             </div>
 
             {/* Purchase card */}
-            {!purchased && (
+            {!hasAccess && (
               <div style={{
                 background: 'var(--warm-white)',
                 borderRadius: 'var(--radius-lg)',
@@ -271,7 +273,7 @@ export default function CoursePage() {
       {/* Slides Viewer */}
       <div className="section">
         <div className="container">
-          {purchased || !course.priceCents ? (
+          {hasAccess ? (
             <>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 40 }}>
                 <h2 style={{ margin: 0 }}>Kurs materiallari</h2>
@@ -380,4 +382,3 @@ export default function CoursePage() {
     </div>
   )
 }
-

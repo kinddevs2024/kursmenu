@@ -7,6 +7,7 @@ const slidesDirSetting = process.env.SLIDES_DIR || '../generated-slides';
 const slidesFullPath = path.resolve(__dirname, slidesDirSetting);
 const MANIFEST_BY_SLUG = new Map(COURSE_MANIFEST.map((course) => [course.slug, course]));
 const DEFAULT_SLUGS = COURSE_MANIFEST.map((course) => course.slug);
+const FREE_COURSE_SLUGS = new Set(DEFAULT_SLUGS.slice(0, 2));
 
 function stableId(slug) {
   return crypto.createHash('md5').update(slug).digest('hex').slice(0, 24);
@@ -50,6 +51,7 @@ function difficultyFor(slug) {
 function buildCourse(slug, dirPath) {
   const title = toTitle(slug) || 'Pastry Course';
   const difficulty = difficultyFor(slug);
+  const isFree = FREE_COURSE_SLUGS.has(slug);
   const localSlideFiles = listSlideFiles(dirPath);
   const slidesFiles = localSlideFiles.length > 0
     ? localSlideFiles
@@ -61,7 +63,8 @@ function buildCourse(slug, dirPath) {
     title,
     description: `Step-by-step pastry course for ${title.toLowerCase()}.`,
     category: categoryFor(slug),
-    priceCents: 12500000,
+    isFree,
+    priceCents: isFree ? 0 : 12500000,
     slidesPath: slug,
     slidesCount: slidesFiles.length || 10,
     slidesFiles,

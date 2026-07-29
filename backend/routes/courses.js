@@ -9,6 +9,23 @@ function isMongoReady() {
   return Course.db.readyState === 1;
 }
 
+function mergeCourse(fallbackCourse, databaseCourse) {
+  if (!fallbackCourse) return databaseCourse;
+  if (!databaseCourse) return fallbackCourse;
+
+  const databaseData = typeof databaseCourse.toObject === 'function'
+    ? databaseCourse.toObject()
+    : databaseCourse;
+  const merged = { ...fallbackCourse, ...databaseData };
+
+  if (fallbackCourse.isFree) {
+    merged.isFree = true;
+    merged.priceCents = 0;
+  }
+
+  return merged;
+}
+
 async function findCourse(id) {
   if (isMongoReady()) {
     let course = null;
@@ -17,7 +34,9 @@ async function findCourse(id) {
     } else {
       course = await Course.findOne({ slug: id });
     }
-    if (course) return course;
+    if (course) {
+      return mergeCourse(findFallbackCourse(course.slug), course);
+    }
   }
 
   return findFallbackCourse(id);
@@ -74,10 +93,9 @@ router.get('/', async (req, res) => {
           databaseCourses.filter((course) => course.slug).map((course) => [course.slug, course])
         );
         const fallbackSlugs = new Set(fallbackCourses.map((course) => course.slug));
-        const mergedCourses = fallbackCourses.map((course) => ({
-          ...course,
-          ...(databaseBySlug.get(course.slug) || {})
-        }));
+        const mergedCourses = fallbackCourses.map((course) => (
+          mergeCourse(course, databaseBySlug.get(course.slug))
+        ));
         const databaseOnlyCourses = databaseCourses.filter(
           (course) => !course.slug || !fallbackSlugs.has(course.slug)
         );

@@ -33,7 +33,7 @@ const TESTIMONIALS = [
 // ─── Course Card ──────────────────────────────────────
 function CourseCard({ dish, index, onBuyClick }) {
   const { hasPurchased } = useAuth()
-  const purchased = hasPurchased(dish._id)
+  const hasAccess = dish.isFree || !dish.priceCents || hasPurchased(dish._id)
   
   // Try to use the first slide as thumbnail, fallback to slide-01.png
   const firstSlide = dish.slidesFiles && dish.slidesFiles.length > 0 ? dish.slidesFiles[0] : 'slide-01.png';
@@ -56,9 +56,9 @@ function CourseCard({ dish, index, onBuyClick }) {
           onError={e => { e.target.src = '/images/hero.jpg' }}
         />
         <div className="course-card-badge">
-          <span className="badge badge-gold">Yangi</span>
+          <span className="badge badge-gold">{dish.isFree ? 'Bepul' : 'Yangi'}</span>
         </div>
-        {!purchased && (
+        {!hasAccess && (
           <div className="course-card-lock">
             <span className="lock-icon">🔒</span>
           </div>
@@ -79,9 +79,9 @@ function CourseCard({ dish, index, onBuyClick }) {
         </div>
 
         <div className="course-card-footer" style={{ justifyContent: 'flex-end' }}>
-          {purchased ? (
+          {hasAccess ? (
             <Link to={`/course/${dish._id}`} className="btn btn-outline" style={{ padding: '10px 20px', fontSize: '0.85rem' }}>
-              Tomosha qilish →
+              {dish.isFree ? "Bepul ko'rish →" : 'Tomosha qilish →'}
             </Link>
           ) : (
             <button
